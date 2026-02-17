@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String
+  role      String   @default("user") // "user" or "admin"
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  price       Float
+  category    String   // e.g., "men-clothing", "women-shoes", "kids", "accessories"
+  imageUrl    String
+  stock       Int
+  orderItems  OrderItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DeliveryZone {
+  id        Int     @id @default(autoincrement())
+  name      String  // e.g., "Nairobi CBD"
+  price     Float
+  orders    Order[]
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  userId         Int
+  deliveryZoneId Int
+  totalAmount    Float
+  mpesaReceipt   String?     // M-Pesa transaction code
+  paymentStatus  String      @default("pending") // pending, completed, failed
+  orderStatus    String      @default("processing") // processing, shipped, delivered
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user           User        @relation(fields: [userId], references: [id])
+  deliveryZone   DeliveryZone @relation(fields: [deliveryZoneId], references: [id])
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float   // price at time of order
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model MpesaLog {
+  id        Int      @id @default(autoincrement())
+  data      Json     // full callback JSON
+  createdAt DateTime @default(now())
+}
